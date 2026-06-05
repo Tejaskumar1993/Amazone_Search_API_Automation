@@ -14,6 +14,7 @@ class AmazonHomePage {
   async goto() {
     await this.page.goto('/', { waitUntil: 'domcontentloaded' });
     await this.header.ensureReady();
+    console.log('Navigated to Amazon home page');
   }
 
   async expectLoaded() {
