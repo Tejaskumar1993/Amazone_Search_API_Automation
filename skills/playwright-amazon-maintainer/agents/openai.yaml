@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playwright Amazon Maintainer"
+  short_description: "Maintain Amazon.de Playwright smoke tests and selectors."
+  default_prompt: "Use this skill to update or stabilize Amazon.de Playwright smoke tests in this repository, then validate the affected spec with Playwright."

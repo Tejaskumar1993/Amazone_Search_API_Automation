@@ -1,0 +1,11 @@
+
+# Playwright
+node_modules/
+/test-results/
+/test-results-run/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+.turbo/
+my-mcp-server/dist/
