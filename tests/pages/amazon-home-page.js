@@ -20,6 +20,7 @@ class AmazonHomePage {
   async expectLoaded() {
     await expect(this.page).toHaveTitle(/Amazon/i);
     await this.header.expectCoreControls();
+    console.log('Amazon home page loaded with core shopping entry points');
   }
 }
 
