@@ -1,6 +1,6 @@
-# my-playwright
+# Amazone_Search_API_Automation
 
-Monorepo for Amazon.de Playwright coverage and a simple MCP server example.
+Amazon Search UI Automation Framework built with Playwright and TypeScript. Implements Page Object Model (POM), cross-browser testing, search validation, product verification, screenshots on failure, detailed reporting, and CI/CD integration for scalable and reliable end-to-end testing.
 
 The Playwright suite now follows a hybrid framework structure: page objects for domain flows, a shared header component for reusable UI, custom fixtures for dependency injection, and data-driven specs.
 
