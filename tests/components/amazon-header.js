@@ -21,6 +21,9 @@ class AmazonHeader {
     this.logo = page
       .locator('#nav-logo:visible, #navbar-logo:visible, a[aria-label*="Amazon" i]:visible')
       .first();
+    this.searchButton = page
+      .locator('#nav-search-submit-button:visible, input[type="submit"][value*="Go" i]:visible')
+      .first();
     this.cart = page.locator('#nav-cart:visible, a[href*="/cart"]:visible').first();
     this.cartCount = page.locator('#nav-cart-count').first();
   }
@@ -89,6 +92,14 @@ class AmazonHeader {
     await this.page.waitForLoadState('domcontentloaded');
   }
 
+  async searchWithButton(query) {
+    await this.ensureReady();
+    await this.searchBox.fill(query);
+    await expect(this.searchButton).toBeVisible();
+    await this.searchButton.click();
+    await this.page.waitForLoadState('domcontentloaded');
+  }
+
   async clearSearch() {
     await this.ensureReady();
     await this.searchBox.click();
@@ -104,6 +115,12 @@ class AmazonHeader {
     await expect(this.searchBox).toBeVisible();
     await expect(this.logo).toBeVisible();
     await expect(this.cart).toBeVisible();
+  }
+
+  async goToCart() {
+    await expect(this.cart).toBeVisible();
+    await this.cart.click();
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   async goHomeFromLogo() {

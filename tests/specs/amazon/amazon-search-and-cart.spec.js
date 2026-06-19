@@ -37,6 +37,15 @@ test.describe('amazon.de validation coverage', () => {
     await expect(amazonHeader.searchBox).toHaveValue(/lenovo|thinkpad/i);
   });
 
+  test('search can be submitted with the header search button', async ({ page, amazonHeader, resultsPage }) => {
+    await amazonHeader.searchWithButton(secondaryQuery);
+    await page.waitForURL(SEARCH_RESULTS_PATH, { timeout: 5_000 }).catch(() => {});
+
+    await expect(amazonHeader.searchBox).toBeVisible();
+    await expect(amazonHeader.searchBox).toHaveValue(/wireless mouse/i);
+    await resultsPage.expectResultsContainOrFallback(/wireless|mouse/i);
+  });
+
   test('can run a second search from the search box', async ({ amazonHeader, resultsPage }) => {
     await resultsPage.searchFor(primaryQuery);
     await resultsPage.searchFor(secondaryQuery);
@@ -82,6 +91,13 @@ test.describe('amazon.de validation coverage', () => {
     await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
     await expect(page).not.toHaveURL(SEARCH_RESULTS_PATH);
     await amazonHeader.expectCoreControls();
+  });
+
+  test('cart link opens the Amazon cart or sign-in flow', async ({ page, amazonHeader, cartPage }) => {
+    await amazonHeader.goToCart();
+
+    await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
+    await cartPage.expectCartFlowSignals();
   });
 
   test('results URL keeps the submitted search query when results load', async ({ resultsPage }) => {
