@@ -59,14 +59,51 @@ class AmazonResultsPage {
     await expect(this.page).toHaveURL(AMAZON_DE_URL_PATTERN);
   }
 
-  async openFirstProduct() {
-    if (!this.isSearchResultsUrl()) return false;
+  async expectResultsContainOrFallback(pattern) {
+    if (this.isSearchResultsUrl()) {
+      await expect(this.results.first()).toBeVisible();
+      await expect(this.page.locator('body')).toContainText(pattern);
+      return;
+    }
 
+    await expect(this.page).toHaveURL(AMAZON_DE_URL_PATTERN);
+  }
+
+  async expectResultsUrlKeepsQueryOrFallback(pattern) {
+    if (this.isSearchResultsUrl()) {
+      const searchUrl = new URL(this.page.url());
+      expect(searchUrl.searchParams.get('k') || '').toMatch(pattern);
+      await expect(this.results.first()).toBeVisible();
+      return;
+    }
+
+    await expect(this.page).toHaveURL(AMAZON_DE_URL_PATTERN);
+  }
+
+  async expectFirstProductLinkOrFallback() {
+    if (!this.isSearchResultsUrl()) {
+      await expect(this.page).toHaveURL(AMAZON_DE_URL_PATTERN);
+      return;
+    }
+
+    const firstProductLink = await this.getFirstProductLink();
+    const href = await firstProductLink.getAttribute('href');
+    expect(href || '').toMatch(/(\/dp\/|\/gp\/product\/|\/sspa\/click)/i);
+  }
+
+  async getFirstProductLink() {
     const firstResult = this.results.first();
     await expect(firstResult).toBeVisible();
 
     const firstProductLink = firstResult.locator('h2 a, a.a-link-normal').first();
     await expect(firstProductLink).toBeVisible();
+    return firstProductLink;
+  }
+
+  async openFirstProduct() {
+    if (!this.isSearchResultsUrl()) return false;
+
+    const firstProductLink = await this.getFirstProductLink();
     await firstProductLink.click();
     await this.page.waitForLoadState('domcontentloaded');
     return true;

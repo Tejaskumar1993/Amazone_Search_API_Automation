@@ -77,7 +77,7 @@ class AmazonProductPage {
 
   async expectPurchaseActions() {
     const state = await this.waitForPurchaseState();
-    if (state) return state;
+    if (state !== PURCHASE_STATES.UNKNOWN) return state;
 
     await expect(this.addToCartButton.or(this.buyNowButton)).toBeVisible();
     return PURCHASE_STATES.PURCHASABLE;

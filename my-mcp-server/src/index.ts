@@ -2,8 +2,22 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
+  ErrorCode,
   ListToolsRequestSchema,
+  McpError,
 } from "@modelcontextprotocol/sdk/types.js";
+
+const TOOLS = [
+  {
+    name: "hello",
+    description: "Simple hello tool",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+  },
+] as const;
 
 const server = new Server(
   {
@@ -19,33 +33,28 @@ const server = new Server(
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: [
-      {
-        name: "hello",
-        description: "Simple hello tool",
-        inputSchema: {
-          type: "object",
-          properties: {},
-          additionalProperties: false,
-        },
-      },
-    ],
+    tools: TOOLS,
   };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "hello") {
-    return {
-      content: [
-        {
-          type: "text",
-          text: "Hello from MCP server!",
-        },
-      ],
-    };
-  }
+  switch (request.params.name) {
+    case "hello":
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Hello from MCP server!",
+          },
+        ],
+      };
 
-  throw new Error("Unknown tool");
+    default:
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Unknown tool: ${request.params.name}`
+      );
+  }
 });
 
 async function main() {

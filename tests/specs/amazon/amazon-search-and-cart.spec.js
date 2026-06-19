@@ -14,8 +14,6 @@ const {
   PURCHASE_STATES,
 } = require('../../constants/amazon');
 
-const SEARCH_RESULTS_SELECTOR = '[data-component-type="s-search-result"]';
-
 test.describe('amazon.de validation coverage', () => {
   test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
@@ -27,15 +25,9 @@ test.describe('amazon.de validation coverage', () => {
     await homePage.expectLoaded();
   });
 
-  test('search for Lenovo ThinkPad shows results or stays on Amazon fallback', async ({ page, resultsPage }) => {
+  test('search for Lenovo ThinkPad shows results or stays on Amazon fallback', async ({ resultsPage }) => {
     await resultsPage.searchFor(primaryQuery);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      await expect(page.locator(SEARCH_RESULTS_SELECTOR).first()).toBeVisible();
-      await expect(page.locator('body')).toContainText(/lenovo|thinkpad/i);
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await resultsPage.expectResultsContainOrFallback(/lenovo|thinkpad/i);
   });
 
   test('search query remains populated after submitting', async ({ amazonHeader, resultsPage }) => {
@@ -45,18 +37,22 @@ test.describe('amazon.de validation coverage', () => {
     await expect(amazonHeader.searchBox).toHaveValue(/lenovo|thinkpad/i);
   });
 
-  test('can run a second search from the search box', async ({ page, amazonHeader, resultsPage }) => {
+  test('search can be submitted with the header search button', async ({ page, amazonHeader, resultsPage }) => {
+    await amazonHeader.searchWithButton(secondaryQuery);
+    await page.waitForURL(SEARCH_RESULTS_PATH, { timeout: 5_000 }).catch(() => {});
+
+    await expect(amazonHeader.searchBox).toBeVisible();
+    await expect(amazonHeader.searchBox).toHaveValue(/wireless mouse/i);
+    await resultsPage.expectResultsContainOrFallback(/wireless|mouse/i);
+  });
+
+  test('can run a second search from the search box', async ({ amazonHeader, resultsPage }) => {
     await resultsPage.searchFor(primaryQuery);
     await resultsPage.searchFor(secondaryQuery);
 
     await expect(amazonHeader.searchBox).toBeVisible();
     await expect(amazonHeader.searchBox).toHaveValue(/wireless mouse/i);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      await expect(page.locator('body')).toContainText(/wireless|mouse/i);
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await resultsPage.expectResultsContainOrFallback(/wireless|mouse/i);
   });
 
   test('search results keep core header controls available', async ({ resultsPage, amazonHeader }) => {
@@ -68,18 +64,13 @@ test.describe('amazon.de validation coverage', () => {
     }
   });
 
-  test('search can be refined with an additional keyword', async ({ page, amazonHeader, resultsPage }) => {
+  test('search can be refined with an additional keyword', async ({ amazonHeader, resultsPage }) => {
     await resultsPage.searchFor(primaryQuery);
     await resultsPage.searchFor(refinedQuery);
 
     await expect(amazonHeader.searchBox).toBeVisible();
     await expect(amazonHeader.searchBox).toHaveValue(/16gb/i);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      await expect(page.locator('body')).toContainText(/16gb|lenovo|thinkpad/i);
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await resultsPage.expectResultsContainOrFallback(/16gb|lenovo|thinkpad/i);
   });
 
   test('search results page remains on Amazon domain after multiple searches', async ({ page, amazonHeader, resultsPage }) => {
@@ -90,10 +81,7 @@ test.describe('amazon.de validation coverage', () => {
     await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
     await expect(amazonHeader.searchBox).toBeVisible();
     await expect(amazonHeader.searchBox).toHaveValue(/usb c hub/i);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      await expect(resultsPage.results.first()).toBeVisible();
-    }
+    await resultsPage.expectVisibleOrFallback();
   });
 
   test('logo returns back to the home page after searching', async ({ page, amazonHeader, resultsPage }) => {
@@ -105,32 +93,21 @@ test.describe('amazon.de validation coverage', () => {
     await amazonHeader.expectCoreControls();
   });
 
-  test('results URL keeps the submitted search query when results load', async ({ page, resultsPage }) => {
-    await resultsPage.searchFor(secondaryQuery);
+  test('cart link opens the Amazon cart or sign-in flow', async ({ page, amazonHeader, cartPage }) => {
+    await amazonHeader.goToCart();
 
-    if (resultsPage.isSearchResultsUrl()) {
-      const searchUrl = new URL(page.url());
-      expect(searchUrl.searchParams.get('k') || '').toMatch(/wireless mouse/i);
-      await expect(resultsPage.results.first()).toBeVisible();
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
+    await cartPage.expectCartFlowSignals();
   });
 
-  test('results page exposes a product link for the current query', async ({ page, resultsPage }) => {
+  test('results URL keeps the submitted search query when results load', async ({ resultsPage }) => {
+    await resultsPage.searchFor(secondaryQuery);
+    await resultsPage.expectResultsUrlKeepsQueryOrFallback(/wireless mouse/i);
+  });
+
+  test('results page exposes a product link for the current query', async ({ resultsPage }) => {
     await resultsPage.searchFor(primaryQuery);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      const firstResult = resultsPage.results.first();
-      await expect(firstResult).toBeVisible();
-
-      const firstProductLink = firstResult.locator('h2 a, a.a-link-normal').first();
-      await expect(firstProductLink).toBeVisible();
-      const href = await firstProductLink.getAttribute('href');
-      expect(href || '').toMatch(/(\/dp\/|\/gp\/product\/|\/sspa\/click)/i);
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await resultsPage.expectFirstProductLinkOrFallback();
   });
 
   test('search box can be cleared and reused directly from results', async ({ page, amazonHeader, resultsPage }) => {
@@ -146,13 +123,7 @@ test.describe('amazon.de validation coverage', () => {
     await page.waitForURL(SEARCH_RESULTS_PATH, { timeout: 5_000 }).catch(() => {});
 
     await expect(amazonHeader.searchBox).toHaveValue(/mechanical keyboard/i);
-
-    if (resultsPage.isSearchResultsUrl()) {
-      await expect(resultsPage.results.first()).toBeVisible();
-      await expect(page.locator('body')).toContainText(/mechanical|keyboard/i);
-    } else {
-      await expect(page).toHaveURL(AMAZON_DE_URL_PATTERN);
-    }
+    await resultsPage.expectResultsContainOrFallback(/mechanical|keyboard/i);
   });
 
   test('search results can open a product details page', async ({ page, resultsPage, productPage }) => {
