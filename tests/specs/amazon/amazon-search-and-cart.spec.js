@@ -118,8 +118,7 @@ test.describe('amazon.de validation coverage', () => {
     await expect(amazonHeader.searchBox).toHaveValue('');
 
     await amazonHeader.searchBox.fill(reusableQuery);
-    await amazonHeader.searchBox.press('Enter');
-    await page.waitForLoadState('domcontentloaded');
+    await amazonHeader.submitCurrentSearch();
     await page.waitForURL(SEARCH_RESULTS_PATH, { timeout: 5_000 }).catch(() => {});
 
     await expect(amazonHeader.searchBox).toHaveValue(/mechanical keyboard/i);

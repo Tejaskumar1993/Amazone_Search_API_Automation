@@ -88,16 +88,37 @@ class AmazonHeader {
   async search(query) {
     await this.ensureReady();
     await this.searchBox.fill(query);
-    await this.searchBox.press('Enter');
-    await this.page.waitForLoadState('domcontentloaded');
+    await this.submitSearchWithWait(() => this.searchBox.press('Enter'));
   }
 
   async searchWithButton(query) {
     await this.ensureReady();
     await this.searchBox.fill(query);
     await expect(this.searchButton).toBeVisible();
-    await this.searchButton.click();
-    await this.page.waitForLoadState('domcontentloaded');
+    await this.submitSearchWithWait(() => this.searchButton.click());
+  }
+
+  async submitCurrentSearch() {
+    await this.ensureReady();
+    await this.submitSearchWithWait(() => this.searchBox.press('Enter'));
+  }
+
+  async submitSearchWithWait(submitAction) {
+    const currentUrl = this.page.url();
+    const navigation = this.page
+      .waitForURL((url) => url.toString() !== currentUrl, {
+        timeout: TIMEOUTS.DOM_READY_TIMEOUT,
+      })
+      .then(() => this.page.waitForLoadState('domcontentloaded', {
+        timeout: TIMEOUTS.DOM_READY_TIMEOUT,
+      }))
+      .catch((error) => {
+        if (this.page.isClosed()) throw error;
+        if (/Timeout/i.test(error.message || '')) return;
+        throw error;
+      });
+
+    await Promise.all([navigation, submitAction()]);
   }
 
   async clearSearch() {
