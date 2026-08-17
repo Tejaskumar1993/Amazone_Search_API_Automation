@@ -72,6 +72,8 @@ class AmazonHeader {
   async ensureReady() {
     try {
       await this.searchBox.waitFor({ state: 'visible', timeout: TIMEOUTS.DOM_READY_TIMEOUT });
+      await this.resolveInterstitials();
+      await this.searchBox.waitFor({ state: 'visible', timeout: TIMEOUTS.DOM_READY_TIMEOUT });
       return;
     } catch {
       // Search box not visible, try to resolve interstitials
@@ -87,13 +89,13 @@ class AmazonHeader {
 
   async search(query) {
     await this.ensureReady();
-    await this.searchBox.fill(query);
+    await this.setSearchQuery(query);
     await this.submitSearchWithWait(() => this.searchBox.press('Enter'));
   }
 
   async searchWithButton(query) {
     await this.ensureReady();
-    await this.searchBox.fill(query);
+    await this.setSearchQuery(query);
     await expect(this.searchButton).toBeVisible();
     await this.submitSearchWithWait(() => this.searchButton.click());
   }
@@ -119,6 +121,12 @@ class AmazonHeader {
       });
 
     await Promise.all([navigation, submitAction()]);
+  }
+
+  async setSearchQuery(query) {
+    await this.clearSearch();
+    await this.searchBox.fill(query);
+    await expect(this.searchBox).toHaveValue(query);
   }
 
   async clearSearch() {
