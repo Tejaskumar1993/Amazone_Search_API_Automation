@@ -39,6 +39,7 @@ const amazonFixtures = {
   cartPage: async ({ page, amazonHeader }, use) => {
     await use(new AmazonCartPage(page, amazonHeader));
   },
+
 };
 
 const test = base.test.extend(amazonFixtures);

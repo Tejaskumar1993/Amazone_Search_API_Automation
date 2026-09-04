@@ -175,7 +175,4 @@ test.describe('amazon.de validation coverage', () => {
     }
   });
 
-  test.skip('coupon or discount code validation requires authenticated checkout on amazon.de production', async () => {});
-
-  test.skip('payment with a test card is not supported against amazon.de production checkout', async () => {});
 });
